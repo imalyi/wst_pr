@@ -67,13 +67,15 @@ bool start_game(TGame* game, TUsers* users, TSettings* settings, int user1_id, i
 int get_user_move(char* name);
 TUser* game_logic(TGame* game);
 
+bool init_settings(TSettings* settings);
+
 
 int main() {
     TUsers users = {};
     TSettings settings = {};
     users.users_count = 0;
     init_user_list(&users);
-
+    init_settings(&settings);
     TMenu action;
     do{
         action = menu();
@@ -144,24 +146,25 @@ void show_users(TUsers *users_list){
     if(users_list->users_count == 0){
         printf("--Empty user list--\n");
     }
-    printf("\n\n");
+    printf("#. Name\n");
     for(int i=0; i < users_list->users_count; i++){
-        printf("%d. Name: %s | Wins: %d, looses: %d \n", i+1, users_list->users[i].name,
+        printf("%d. %s \n", i+1, users_list->users[i].name,
                users_list->users[i].wins,
                users_list->users[i].looses);
     }
 }
 
 void init_user_list(TUsers *users){
-    //FILE *fptr;
+    FILE *fptr = NULL;
 
-    //if ((fptr = fopen("data/users.bin","rb")) == NULL){
-    //    printf("Cant read users from data/users.bin");
-    //}
+    if((fptr = fopen("data/users.bin", "rb")) == NULL) {
+        printf("can't open file\n");
+        return;
+    }
 
-    //fscanf(fptr,"%d", users);
-    //printf("Value of n=%d", users);
-    //fclose(fptr);
+    fread(users, sizeof(TUsers), 1, fptr);
+    fclose(fptr);
+
     show_users(users);
     if(users->users_count <2){
         printf("There are less then 2 users. Add several!\n");
@@ -183,6 +186,9 @@ bool save_users(TUsers *users){
 
 bool delete_user(TUsers* users, int id){
     id--;
+    if(id>users->users_count){
+        return false;
+    }
     for(int i=id; i<=users->users_count; i++){
         users->users[i] = users->users[i+1];
     }
@@ -192,10 +198,14 @@ bool delete_user(TUsers* users, int id){
 
 void delete_user_menu(TUsers *users){
     int id;
-    printf("Enter user id:");
+    printf("Enter user id:\n");
     show_users(users);
     scanf("%d", &id);
-    delete_user(users, id);
+    if(delete_user(users, id)){
+        printf("User %d deleted\n", id);
+    }else{
+        printf("Cant delete %d\n", id);
+    }
 }
 
 bool change_settings(TSettings* settings, int new_amount_of_lucifers){
@@ -206,11 +216,11 @@ bool change_settings(TSettings* settings, int new_amount_of_lucifers){
 void change_settings_menu(TSettings* settings){
     int new_amount_of_lucifers;
     int old_amount_of_lucifers = settings->max_lucifer;
-    printf("Enter amount of lucifers for game:\n");
+    printf("Current amount is: %d.Enter new amount of lucifers for game:\n", settings->max_lucifer);
     scanf("%d", &new_amount_of_lucifers);
 
     if(change_settings(settings, new_amount_of_lucifers)){
-        printf("Amount of lucifers changed from %d to %d\n", old_amount_of_lucifers, new_amount_of_lucifers);
+        printf("Amount of lucifers was changed from %d to %d\n", old_amount_of_lucifers, new_amount_of_lucifers);
     }
 }
 
@@ -224,7 +234,6 @@ bool save_settings(TSettings *settings){
     fclose(fptr);
 }
 
-//DO THIS!!!
 void show_ranking(TUsers* users, TSettings settings) {
     if (settings.ranking_sort_direction == ASCENDING) {
         int a;
@@ -252,14 +261,14 @@ TUser* game_logic(TGame* game){
     do{
         int amount_of_lucifers_for_decr = get_user_move(game->turn->name);
         game->amount_of_lucifers -= amount_of_lucifers_for_decr;
-        if(strcmp(game->turn->name, game->user1->name)){                  //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        if(strcmp(game->turn->name, game->user1->name)){
             game->turn = game->user2;
         }else{
             game->turn = game->user1;
         }
     }while(game->amount_of_lucifers > 0);
 
-    if(strcmp(game->turn->name, game->user1->name)){                  //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    if(strcmp(game->turn->name, game->user1->name)){
         game->user2->looses++;
     }else{
         game->user1->wins++;
@@ -292,5 +301,17 @@ bool start_game(TGame* game, TUsers* users, TSettings* settings, int user1_id, i
     return true;
 }
 
-//TODO: sort ranking
-//TODO: save states
+bool init_settings(TSettings* settings){
+    FILE *fptr = NULL;
+
+    if((fptr = fopen("data/settings.bin", "rb")) == NULL) {
+        printf("can't open file\n");
+        return false;
+    }
+
+    fread(settings, sizeof(TSettings), 1, fptr);
+    fclose(fptr);
+
+}
+
+//TODO: show ranking, change menu, game logic fix, random choose player, sort ranking, devide on libs

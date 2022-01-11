@@ -7,14 +7,8 @@
 #define MAX_USER_NAME 50
 #define MAX_MOVES_IN_HISTORY 60
 
-typedef enum{
-    ASCENDING,
-    DESCENDING,
-    }TSort;
-
 typedef struct{
-    int max_lucifer;
-    TSort ranking_sort_direction;
+    int max_lucifer_in_game;
 }TSettings;
 
 typedef struct{
@@ -34,7 +28,6 @@ typedef enum{
     DELETE_USER=3,
     SETTINGS=4,
     SHOW_RANKING=5,
-    SHOW_USERS=6,
     EXIT=7
 }TMenu;
 
@@ -60,7 +53,7 @@ bool change_settings(TSettings* settings, int new_amount_of_lucifers);
 void change_settings_menu(TSettings* settings);
 bool save_settings(TSettings* settings);
 
-void show_ranking(TUsers* users, TSettings settings);
+void show_ranking(TUsers* users);
 
 void start_game_menu(TUsers* users, TSettings* settings);
 bool start_game(TGame* game, TUsers* users, TSettings* settings, int user1_id, int user2_id);
@@ -92,10 +85,7 @@ int main() {
             case SETTINGS:
                 change_settings_menu(&settings);
             case SHOW_RANKING:
-                printf("show stat");
-                break;
-            case SHOW_USERS:
-                show_users(&users);
+                show_ranking(&users);
                 break;
             case EXIT:
                 save_users(&users);
@@ -105,9 +95,10 @@ int main() {
     }while(1);
 }
 
+
 TMenu menu(){
     int action;
-    printf("\n----Menu----\n1.Start game\n2. Add user\n3. Delete user\n4. Settings\n4. Show ranking\n5. Exit\nInput #:\n");
+    printf("\n----Menu----\n1.Start game\n2. Add user\n3. Delete user\n4. Settings\n5. Show ranking\n6. Exit\nInput #:\n");
     scanf("%d", &action);
     return action;
 }
@@ -209,14 +200,14 @@ void delete_user_menu(TUsers *users){
 }
 
 bool change_settings(TSettings* settings, int new_amount_of_lucifers){
-    settings->max_lucifer = new_amount_of_lucifers;
+    settings->max_lucifer_in_game = new_amount_of_lucifers;
     return true;
 }
 
 void change_settings_menu(TSettings* settings){
     int new_amount_of_lucifers;
-    int old_amount_of_lucifers = settings->max_lucifer;
-    printf("Current amount is: %d.Enter new amount of lucifers for game:\n", settings->max_lucifer);
+    int old_amount_of_lucifers = settings->max_lucifer_in_game;
+    printf("Current amount is: %d.Enter new amount of lucifers for game:\n", settings->max_lucifer_in_game);
     scanf("%d", &new_amount_of_lucifers);
 
     if(change_settings(settings, new_amount_of_lucifers)){
@@ -234,14 +225,6 @@ bool save_settings(TSettings *settings){
     fclose(fptr);
 }
 
-void show_ranking(TUsers* users, TSettings settings) {
-    if (settings.ranking_sort_direction == ASCENDING) {
-        int a;
-    }
-    for (int i = 0; i < users->users_count; i++) {
-        printf("");
-    }
-}
 
 void start_game_menu(TUsers* users, TSettings* settings){
     int user1_id, user2_id;
@@ -252,6 +235,7 @@ void start_game_menu(TUsers* users, TSettings* settings){
 
     if(!start_game(&game, users, settings, user1_id, user2_id)){
         printf("Error at starting game!");
+        return;
     }
     TUser* winner = game_logic(&game);
     printf("%s win!", winner->name);
@@ -277,18 +261,25 @@ TUser* game_logic(TGame* game){
 }
 
 int get_user_move(char* name){
-    int amount_of_lucifers;
-    printf("%s, your turn! Input amount of lucifers:\n", name);
-    scanf("%d", &amount_of_lucifers);
-    return amount_of_lucifers;
+    unsigned int amount_of_lucifers;
+    printf("%s, your turn! Input amount of lucifers(1-3):\n", name);
+    do{
+        scanf("%d", &amount_of_lucifers);
+        if(amount_of_lucifers >= 4){
+            printf("Incorect value. Input number in range 1-3.\n");
+
+        }
+        return amount_of_lucifers;
+    } while (1);
 }
 
 bool start_game(TGame* game, TUsers* users, TSettings* settings, int user1_id, int user2_id){
+    user2_id--;
+    user1_id--;
+
     if(user1_id > users->users_count || user2_id > users->users_count){
         return false;
     }
-    user2_id--;
-    user1_id--;
 
     TUser* user1 = &users->users[user1_id];
     TUser* user2 = &users->users[user2_id];
@@ -296,7 +287,7 @@ bool start_game(TGame* game, TUsers* users, TSettings* settings, int user1_id, i
     game->user1 = user1;
     game->user2 = user2;
     game->turn = user1;
-    game->amount_of_lucifers = settings->max_lucifer;
+    game->amount_of_lucifers = settings->max_lucifer_in_game;
 
     return true;
 }
@@ -308,10 +299,14 @@ bool init_settings(TSettings* settings){
         printf("can't open file\n");
         return false;
     }
-
     fread(settings, sizeof(TSettings), 1, fptr);
     fclose(fptr);
-
 }
 
-//TODO: show ranking, change menu, game logic fix, random choose player, sort ranking, devide on libs
+void show_ranking(TUsers* users){
+    printf("# NAME WINS LOOSES\n");
+    for(int i=0; i<users->users_count; i++){
+        printf("%d. %s %d %d\n", i+1, users->users[i].name, users->users[i].wins, users->users[i].looses);
+    }
+}
+// bug

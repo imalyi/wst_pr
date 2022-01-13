@@ -5,7 +5,6 @@
 
 #define MAX_USERS 100
 #define MAX_USER_NAME 14
-#define MAX_MOVES_IN_HISTORY 60
 
 typedef struct{
     int max_lucifer_in_game;
@@ -37,7 +36,6 @@ typedef struct{
     TUser *turn;
     TUser *winner;
     int amount_of_lucifers;
-    char history[MAX_MOVES_IN_HISTORY];
 }TGame;
 
 TMenu menu();
